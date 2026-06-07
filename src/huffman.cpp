@@ -27,11 +27,9 @@ HuffmanNode* build_tree(const std::unordered_map<uint8_t, uint64_t>& freq_table)
         min_heap.push(new HuffmanNode(symbol, freq));
     }
 
-    // A single unique symbol must be wrapped in a dummy parent to ensure
-    // a valid tree structure for the traversal algorithm.
+    // return the lone leaf directly as the root
     if (min_heap.size() == 1) {
-        HuffmanNode* only = min_heap.top(); min_heap.pop();
-        return new HuffmanNode(only->frequency, only, nullptr);
+        return min_heap.top();
     }
 
     while (min_heap.size() > 1) {
