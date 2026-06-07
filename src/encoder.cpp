@@ -72,7 +72,7 @@ static uint64_t read_u64_le(std::FILE* f) {
     return value;
 }
 
-double compress(const std::string& src_path, const std::string& dst_path) {
+double compress(const std::string& src_path, const std::string& dst_path, unsigned int thread_count, ProgressCallback progress_cb) {
     std::vector<uint8_t> buffer = read_file_buffered(src_path);
     size_t file_size = buffer.size();
 
@@ -83,8 +83,10 @@ double compress(const std::string& src_path, const std::string& dst_path) {
         return 0.0;
     }
 
-    unsigned int thread_count = std::thread::hardware_concurrency();
-    if (thread_count == 0) thread_count = 1;
+    if (thread_count == 0) {
+        thread_count = std::thread::hardware_concurrency();
+        if (thread_count == 0) thread_count = 1;
+    }
 
     FreqTable freq_array = count_frequencies_parallel(buffer.data(), buffer.size(), thread_count);
 
@@ -126,13 +128,25 @@ double compress(const std::string& src_path, const std::string& dst_path) {
         }
 
         BitWriter bw(dst.fp);
+        static constexpr uint64_t PROGRESS_INTERVAL = 4096;
+        uint64_t bytes_encoded = 0;
+
         for (const auto& byte_val : buffer) {
             const std::string& code = code_map.at(byte_val);
             for (char c : code) {
                 bw.write_bit(static_cast<uint8_t>(c - '0'));
             }
+            
+            ++bytes_encoded;
+            if (progress_cb && (bytes_encoded % PROGRESS_INTERVAL == 0)) {
+                progress_cb(bytes_encoded, buffer.size());
+            }
         }
-        bw.flush(); 
+        bw.flush();
+    }
+
+    if (progress_cb) {
+        progress_cb(buffer.size(), buffer.size());
     }
 
     // Overwrite payload bit count
@@ -153,7 +167,7 @@ double compress(const std::string& src_path, const std::string& dst_path) {
         : 1.0;
 }
 
-void decompress(const std::string& src_path, const std::string& dst_path) {
+void decompress(const std::string& src_path, const std::string& dst_path, ProgressCallback progress_cb) {
     FileHandle src(src_path, "rb");
 
     // Validate magic
@@ -259,5 +273,9 @@ void decompress(const std::string& src_path, const std::string& dst_path) {
         if (std::fwrite(output.data(), 1, output.size(), dst.fp) != output.size()) {
             throw std::runtime_error("decompress: fwrite failed");
         }
+    }
+
+    if (progress_cb) {
+        progress_cb(1, 1);
     }
 }

@@ -21,7 +21,9 @@ set(CORE_SOURCES
     src/bit_io.cpp
     src/encoder.cpp
     src/buffered_io.cpp     
-    src/parallel_freq.cpp  
+    src/parallel_freq.cpp
+    src/cli.cpp
+    src/progress.cpp
 )
 
 add_executable(huffman
@@ -57,3 +59,9 @@ target_include_directories(test_day3 PRIVATE src)
 target_compile_options(test_day3 PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
 target_link_options(test_day3 PRIVATE ${SANITIZER_FLAGS})
 target_link_libraries(test_day3 PRIVATE Threads::Threads)
+
+add_executable(test_day4 tests/test_day4.cpp ${CORE_SOURCES})
+target_include_directories(test_day4 PRIVATE src)
+target_compile_options(test_day4 PRIVATE -fsanitize=address,undefined)
+target_link_options(test_day4 PRIVATE -fsanitize=address,undefined)
+target_link_libraries(test_day4 PRIVATE Threads::Threads)
