@@ -1,6 +1,8 @@
 #include "encoder.hpp"
 #include "bit_io.hpp"
 #include "huffman.hpp"
+#include "buffered_io.hpp"
+#include "parallel_freq.hpp"
 
 #include <array>
 #include <cstdio>
@@ -9,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <thread>
 
 // .huff file signature
 static constexpr uint8_t MAGIC[8] = {'H','U','F','F', 0x00, 0x01, 0x00, 0x00};
@@ -45,24 +48,6 @@ static HuffmanNode* deserialize_tree(BitReader& br) {
     }
 }
 
-// RAII wrapper for FILE*
-struct FileHandle {
-    std::FILE* fp = nullptr;
-
-    FileHandle(const std::string& path, const char* mode) {
-        fp = std::fopen(path.c_str(), mode);
-        if (!fp) {
-            throw std::runtime_error("Cannot open file: " + path);
-        }
-    }
-    ~FileHandle() {
-        if (fp) std::fclose(fp);
-    }
-
-    FileHandle(const FileHandle&)            = delete;
-    FileHandle& operator=(const FileHandle&) = delete;
-};
-
 // Little-endian uint64_t I/O
 static void write_u64_le(std::FILE* f, uint64_t value) {
     uint8_t buf[8];
@@ -88,19 +73,8 @@ static uint64_t read_u64_le(std::FILE* f) {
 }
 
 double compress(const std::string& src_path, const std::string& dst_path) {
-    // Read source file into memory
-    FileHandle src(src_path, "rb");
-
-    if (std::fseek(src.fp, 0, SEEK_END) != 0) {
-        throw std::runtime_error("compress: fseek failed");
-    }
-    long file_size_signed = std::ftell(src.fp);
-    if (file_size_signed < 0) {
-        throw std::runtime_error("compress: ftell failed");
-    }
-    std::rewind(src.fp);
-
-    size_t file_size = static_cast<size_t>(file_size_signed);
+    std::vector<uint8_t> buffer = read_file_buffered(src_path);
+    size_t file_size = buffer.size();
 
     if (file_size == 0) {
         FileHandle dst(dst_path, "wb");
@@ -109,13 +83,18 @@ double compress(const std::string& src_path, const std::string& dst_path) {
         return 0.0;
     }
 
-    std::vector<uint8_t> buffer(file_size);
-    if (std::fread(buffer.data(), 1, file_size, src.fp) != file_size) {
-        throw std::runtime_error("compress: fread failed");
-    }
+    unsigned int thread_count = std::thread::hardware_concurrency();
+    if (thread_count == 0) thread_count = 1;
 
-    // Build tree and codes
-    auto freq_table = build_frequency_table(buffer.data(), file_size);
+    FreqTable freq_array = count_frequencies_parallel(buffer.data(), buffer.size(), thread_count);
+
+    // Convert dense array to sparse map for the tree builder
+    std::unordered_map<uint8_t, uint64_t> freq_table;
+    for (int i = 0; i < 256; ++i) {
+        if (freq_array[i] > 0) {
+            freq_table[static_cast<uint8_t>(i)] = freq_array[i];
+        }
+    }
     HuffmanNode* root = build_tree(freq_table);
 
     std::unordered_map<uint8_t, std::string> code_map;
