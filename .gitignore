@@ -1,2 +1,9 @@
 build/
 .vscode/
+input.txt
+output.txt
+build_tsan/
+*.huff
+*.txt
+*.md
+!README.md

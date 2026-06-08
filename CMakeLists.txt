@@ -35,33 +35,33 @@ target_compile_options(huffman PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAG
 target_link_options(huffman PRIVATE ${SANITIZER_FLAGS})
 target_link_libraries(huffman PRIVATE Threads::Threads)
 
-add_executable(test_day1
-    tests/test_day1.cpp
+add_executable(test_huffman
+    tests/test_huffman.cpp
     src/huffman.cpp
 )
-target_include_directories(test_day1 PRIVATE src)
-target_compile_options(test_day1 PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
-target_link_options(test_day1 PRIVATE ${SANITIZER_FLAGS})
+target_include_directories(test_huffman PRIVATE src)
+target_compile_options(test_huffman PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
+target_link_options(test_huffman PRIVATE ${SANITIZER_FLAGS})
 
-add_executable(test_day2
-    tests/test_day2.cpp
+add_executable(test_bit_io
+    tests/test_bit_io.cpp
     ${CORE_SOURCES}
 )
-target_include_directories(test_day2 PRIVATE src)
-target_compile_options(test_day2 PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
-target_link_options(test_day2 PRIVATE ${SANITIZER_FLAGS})
+target_include_directories(test_bit_io PRIVATE src)
+target_compile_options(test_bit_io PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
+target_link_options(test_bit_io PRIVATE ${SANITIZER_FLAGS})
 
-add_executable(test_day3
-    tests/test_day3.cpp
+add_executable(test_parallel
+    tests/test_parallel.cpp
     ${CORE_SOURCES}
 )
-target_include_directories(test_day3 PRIVATE src)
-target_compile_options(test_day3 PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
-target_link_options(test_day3 PRIVATE ${SANITIZER_FLAGS})
-target_link_libraries(test_day3 PRIVATE Threads::Threads)
+target_include_directories(test_parallel PRIVATE src)
+target_compile_options(test_parallel PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
+target_link_options(test_parallel PRIVATE ${SANITIZER_FLAGS})
+target_link_libraries(test_parallel PRIVATE Threads::Threads)
 
-add_executable(test_day4 tests/test_day4.cpp ${CORE_SOURCES})
-target_include_directories(test_day4 PRIVATE src)
-target_compile_options(test_day4 PRIVATE -fsanitize=address,undefined)
-target_link_options(test_day4 PRIVATE -fsanitize=address,undefined)
-target_link_libraries(test_day4 PRIVATE Threads::Threads)
+add_executable(test_cli tests/test_cli.cpp ${CORE_SOURCES})
+target_include_directories(test_cli PRIVATE src)
+target_compile_options(test_cli PRIVATE -Wall -Wextra -Wpedantic ${SANITIZER_FLAGS})
+target_link_options(test_cli PRIVATE ${SANITIZER_FLAGS})
+target_link_libraries(test_cli PRIVATE Threads::Threads)
