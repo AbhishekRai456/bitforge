@@ -7,3 +7,5 @@ build_tsan/
 *.txt
 *.md
 !README.md
+build_clean/
+build_release/
